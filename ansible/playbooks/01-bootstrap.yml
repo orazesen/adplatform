@@ -1,0 +1,61 @@
+---
+# Bootstrap playbook - initial server setup
+
+- name: Bootstrap servers
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install Python3 and dependencies
+      apt:
+        name:
+          - python3
+          - python3-pip
+          - python3-setuptools
+        state: present
+
+    - name: Create deploy user
+      user:
+        name: deploy
+        groups: sudo
+        shell: /bin/bash
+        create_home: yes
+        append: yes
+
+    - name: Set up sudo for deploy user
+      copy:
+        content: "deploy ALL=(ALL) NOPASSWD:ALL\n"
+        dest: /etc/sudoers.d/deploy
+        mode: "0440"
+
+    - name: Disable swap
+      shell: |
+        swapoff -a
+        sed -i '/swap/d' /etc/fstab
+      args:
+        warn: false
+
+    - name: Set timezone to UTC
+      timezone:
+        name: UTC
+
+    - name: Install basic packages
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - vim
+          - htop
+          - iotop
+          - sysstat
+          - net-tools
+          - dstat
+          - build-essential
+        state: present

@@ -1,0 +1,45 @@
+# Example Production Configuration for Hetzner
+
+# Provider
+provider = "hetzner"
+
+# Environment
+environment = "production"
+
+# Region (Hetzner locations: fsn1, nbg1, hel1, ash, hil)
+region = "fsn1"  # Falkenstein, Germany
+
+# Servers
+server_count = 5
+server_type  = "CCX63"  # 64 vCPU, 256GB RAM, 1.5TB NVMe
+
+# Network
+private_network_cidr = "10.10.0.0/16"
+
+# SSH Keys (add your public keys)
+ssh_keys = [
+  "ssh-ed25519 AAAAC3... your-key-here",
+]
+
+# Tags
+tags = {
+  project     = "adplatform"
+  environment = "production"
+  managed_by  = "terraform"
+  team        = "platform"
+}
+
+# Monitoring
+enable_monitoring = true
+
+# Backups
+enable_backup = true
+backup_retention_days = 30
+
+# Additional volumes (optional)
+additional_volumes = [
+  {
+    size = 2000  # 2TB for database storage
+    type = "nvme"
+  }
+]

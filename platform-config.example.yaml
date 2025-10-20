@@ -1,0 +1,474 @@
+# Complete Platform Configuration
+# Copy this to platform-config.yaml and fill in your values
+
+# Platform Basics
+platform:
+  domain: example.com # Your domain
+  email: admin@example.com # Admin email
+  timezone: UTC
+  environment: production # or: staging, development
+
+# GitLab Configuration
+gitlab:
+  version: "16.5.0" # GitLab version
+  edition: ee # ce (Community) or ee (Enterprise)
+
+  admin:
+    username: root
+    password: CHANGE_ME_STRONG_PASSWORD # Minimum 8 characters
+    email: admin@example.com
+    name: "Platform Administrator"
+
+  smtp:
+    enabled: true
+    address: smtp.gmail.com
+    port: 587
+    user: your-email@gmail.com
+    password: CHANGE_ME
+    domain: example.com
+    authentication: login
+    starttls: true
+
+  runners:
+    registration_token: "" # Leave empty to auto-generate
+    concurrent: 10 # Max concurrent jobs
+
+    docker:
+      image: alpine:latest
+      privileged: true # Needed for Docker-in-Docker
+
+    kubernetes:
+      namespace: gitlab-runners
+      cpu_limit: 2
+      memory_limit: 4Gi
+
+  registry:
+    enabled: true
+    storage: s3 # Uses MinIO
+
+  pages:
+    enabled: true
+    domain: pages.example.com
+
+# Monitoring Stack
+monitoring:
+  prometheus:
+    retention: 30d # Metrics retention
+    storage: 100Gi
+
+  grafana:
+    admin_username: admin
+    admin_password: CHANGE_ME
+
+    # Slack for alerts
+    slack:
+      enabled: false
+      webhook_url: https://hooks.slack.com/services/XXX
+      channel: "#alerts"
+
+    # PagerDuty for critical alerts
+    pagerduty:
+      enabled: false
+      integration_key: CHANGE_ME
+
+  alertmanager:
+    email_to: alerts@example.com
+    email_from: alertmanager@example.com
+
+  loki:
+    retention: 30d
+    storage: 100Gi
+
+  jaeger:
+    storage: elasticsearch # or: memory, badger
+    retention: 7d
+
+# Data Engineering Platform
+airflow:
+  version: "2.7.0"
+
+  admin:
+    username: admin
+    password: CHANGE_ME
+    email: airflow@example.com
+    firstname: Platform
+    lastname: Admin
+
+  executor: kubernetes # kubernetes, celery, or local
+
+  # Pre-create connections
+  connections:
+    - conn_id: scylladb_default
+      conn_type: cassandra
+      host: scylladb-service
+
+    - conn_id: clickhouse_default
+      conn_type: http
+      host: clickhouse-service
+
+    - conn_id: spark_default
+      conn_type: spark
+      host: spark://spark-master:7077
+
+  # Pre-create variables
+  variables:
+    - key: data_lake_path
+      value: s3://data-lake
+
+    - key: environment
+      value: production
+
+spark:
+  version: "3.5.0"
+  master:
+    cpu: 4
+    memory: 8Gi
+
+  workers:
+    count: 3
+    cpu: 8
+    memory: 16Gi
+
+jupyterhub:
+  version: "4.0.0"
+
+  admin:
+    username: admin
+    password: CHANGE_ME
+
+  # Pre-create users
+  users:
+    - username: data-scientist-1
+      admin: false
+
+    - username: data-engineer-1
+      admin: false
+
+  # Python packages to pre-install
+  packages:
+    - pandas
+    - numpy
+    - scikit-learn
+    - tensorflow
+    - pytorch
+    - mlflow
+    - dask
+    - plotly
+
+  # Resource limits per user
+  resources:
+    cpu: 4
+    memory: 16Gi
+    gpu: 0 # Set to 1+ if GPUs available
+
+# ML Platform
+mlflow:
+  version: "2.8.0"
+  tracking_uri: https://mlflow.example.com
+  artifact_root: s3://mlflow-artifacts
+
+  backend_store:
+    type: postgresql
+    database: mlflow
+
+kubeflow:
+  version: "1.8.0"
+
+  admin:
+    email: admin@example.com
+    password: CHANGE_ME
+
+  components:
+    pipelines: true
+    katib: true # Hyperparameter tuning
+    kfserving: true # Model serving
+    notebooks: true
+
+  # Model serving
+  serving:
+    tensorflow: true
+    pytorch: true
+    onnx: true
+    triton: true
+
+# Secrets Management
+vault:
+  version: "1.15.0"
+
+  root_token: "" # Leave empty to auto-generate
+
+  # Unseal configuration
+  unseal:
+    keys: 5
+    threshold: 3
+
+  # Storage backend
+  storage:
+    type: raft # or: consul, etcd
+
+  # Auto-unseal (optional)
+  auto_unseal:
+    enabled: false
+    type: transit # or: aws-kms, azure-keyvault, gcp-kms
+
+# Databases
+databases:
+  postgresql:
+    version: "15.4"
+    admin_password: CHANGE_ME
+
+    # Databases to create
+    databases:
+      - name: gitlab
+        user: gitlab
+        password: CHANGE_ME
+
+      - name: airflow
+        user: airflow
+        password: CHANGE_ME
+
+      - name: mlflow
+        user: mlflow
+        password: CHANGE_ME
+
+  scylladb:
+    version: "5.4.0"
+    replication_factor: 3
+
+    # Keyspaces to create
+    keyspaces:
+      - name: application
+        replication: 3
+
+  clickhouse:
+    version: "23.10"
+    admin_password: CHANGE_ME
+
+    # Databases to create
+    databases:
+      - name: analytics
+        user: analytics
+        password: CHANGE_ME
+
+  dragonflydb:
+    version: "1.11"
+    # No auth by default, enable if needed
+    requirepass: ""
+
+  redpanda:
+    version: "23.2.0"
+
+    # Topics to create
+    topics:
+      - name: events
+        partitions: 12
+        replication: 3
+
+      - name: logs
+        partitions: 6
+        replication: 3
+
+# Object Storage (MinIO)
+minio:
+  version: "RELEASE.2023-10-25"
+
+  access_key: admin
+  secret_key: CHANGE_ME_STRONG_SECRET # Minimum 16 characters
+
+  # Buckets to auto-create
+  buckets:
+    - name: gitlab-registry
+      versioning: true
+
+    - name: gitlab-artifacts
+      lifecycle: 30d # Delete after 30 days
+
+    - name: gitlab-lfs
+      versioning: true
+
+    - name: mlflow-artifacts
+      versioning: true
+
+    - name: airflow-logs
+      lifecycle: 90d
+
+    - name: data-lake
+      versioning: true
+
+    - name: backup
+      versioning: true
+      retention: 90d
+
+# Service Mesh
+service_mesh:
+  type: linkerd # or: istio
+
+  linkerd:
+    version: "2.14.0"
+    ha: true # High availability
+
+# Ingress & TLS
+ingress:
+  class: nginx
+
+ssl:
+  provider: letsencrypt # or: self-signed, custom
+
+  letsencrypt:
+    email: admin@example.com
+    staging: false # Set true for testing
+    server: https://acme-v02.api.letsencrypt.org/directory
+
+  # Custom certificates (if provider: custom)
+  custom:
+    tls_crt: /path/to/tls.crt
+    tls_key: /path/to/tls.key
+
+# Backup & Disaster Recovery
+backup:
+  enabled: true
+  schedule: "0 2 * * *" # Daily at 2 AM UTC
+  retention_days: 30
+
+  # What to backup
+  targets:
+    - gitlab
+    - databases
+    - vault
+    - monitoring-data
+    - ml-models
+
+  # Where to store backups
+  destination:
+    type: s3
+    bucket: backup
+    path: /backups/production
+
+# Auto-scaling
+autoscaling:
+  enabled: true
+
+  # GitLab Runners
+  gitlab_runners:
+    min: 2
+    max: 20
+    cpu_threshold: 70
+
+  # Airflow Workers
+  airflow_workers:
+    min: 1
+    max: 10
+    queue_threshold: 5
+
+  # Jupyter Servers
+  jupyter_servers:
+    min: 1
+    max: 5
+
+# Resource Quotas
+quotas:
+  # Per namespace resource limits
+  default:
+    cpu: 32
+    memory: 128Gi
+    storage: 500Gi
+
+  # Specific namespaces
+  namespaces:
+    gitlab:
+      cpu: 16
+      memory: 64Gi
+      storage: 1Ti
+
+    data-engineering:
+      cpu: 64
+      memory: 256Gi
+      storage: 2Ti
+
+    ml-platform:
+      cpu: 64
+      memory: 256Gi
+      gpu: 4
+      storage: 2Ti
+
+# CI/CD Templates
+cicd_templates:
+  # Pre-configured pipeline templates
+  templates:
+    - name: Rust
+      path: templates/Rust.gitlab-ci.yml
+
+    - name: Python
+      path: templates/Python.gitlab-ci.yml
+
+    - name: Node.js
+      path: templates/Nodejs.gitlab-ci.yml
+
+    - name: Seastar
+      path: templates/Seastar.gitlab-ci.yml
+
+    - name: ML-Training
+      path: templates/ML-Training.gitlab-ci.yml
+
+# Pre-configured Grafana Dashboards
+dashboards:
+  # Auto-import these dashboards
+  import:
+    - name: Kubernetes Cluster
+      id: 7249
+
+    - name: Node Exporter
+      id: 1860
+
+    - name: GitLab
+      id: 13946
+
+    - name: PostgreSQL
+      id: 9628
+
+    - name: Nginx Ingress
+      id: 9614
+
+# Notifications
+notifications:
+  email:
+    enabled: true
+    smtp_server: smtp.gmail.com
+    smtp_port: 587
+    username: notifications@example.com
+    password: CHANGE_ME
+
+  slack:
+    enabled: false
+    webhook_url: https://hooks.slack.com/services/XXX
+    default_channel: "#devops"
+
+  pagerduty:
+    enabled: false
+    api_key: CHANGE_ME
+
+# Logging
+logging:
+  level: info # debug, info, warn, error
+
+  # Log shipping to external services
+  external:
+    enabled: false
+    type: elasticsearch # or: splunk, datadog
+    endpoint: https://logs.example.com
+
+# Advanced: Multi-region
+multi_region:
+  enabled: false
+
+  regions:
+    - name: us-east
+      primary: true
+
+    - name: eu-west
+      primary: false
+
+  # Cross-region replication
+  replication:
+    databases: true
+    storage: true
