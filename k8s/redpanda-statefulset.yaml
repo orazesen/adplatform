@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redpanda-headless
+  namespace: adplatform
+  labels:
+    app: redpanda
+spec:
+  clusterIP: None
+  selector:
+    app: redpanda
+  ports:
+    - name: kafka
+      port: 9092
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redpanda
+  namespace: adplatform
+  labels:
+    app: redpanda
+spec:
+  selector:
+    app: redpanda
+  ports:
+    - name: kafka
+      port: 9092
+      targetPort: 9092
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redpanda
+  namespace: adplatform
+  labels:
+    app: redpanda
+spec:
+  serviceName: redpanda-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redpanda
+  template:
+    metadata:
+      labels:
+        app: redpanda
+    spec:
+      containers:
+        - name: redpanda
+          # Use an official Vectorized image; pin a tag for production
+          image: redpandadata/redpanda:v25.2.9
+          args:
+            [
+              "redpanda",
+              "start",
+              "--overprovisioned",
+              "--smp",
+              "1",
+              "--memory",
+              "1G",
+              "--reserve-memory",
+              "0M",
+            ]
+          ports:
+            - containerPort: 9092
+              name: kafka
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/redpanda/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi
+        storageClassName: docker-desktop

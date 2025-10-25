@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dragonfly
+  namespace: adplatform
+  labels:
+    app: dragonfly
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dragonfly
+  template:
+    metadata:
+      labels:
+        app: dragonfly
+    spec:
+      containers:
+        - name: dragonfly
+          image: dragonflydb/dragonfly:v1.27.1
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dragonfly
+  namespace: adplatform
+  labels:
+    app: dragonfly
+spec:
+  selector:
+    app: dragonfly
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379

@@ -1,0 +1,12 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: docker-desktop
+provisioner: docker.io/hostpath
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: false
+# This StorageClass is an alias that points to the local hostpath provisioner
+# present on Docker Desktop. It exists so PVCs that request `docker-desktop`
+# (created earlier) can be dynamically provisioned without changing existing
+# StatefulSet definitions.

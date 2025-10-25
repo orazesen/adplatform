@@ -1,0 +1,18 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-envoy-ingress
+  namespace: adplatform
+spec:
+  description: "Allow external traffic to reach Envoy (ingress)"
+  endpointSelector:
+    matchLabels:
+      app: envoy
+  ingress:
+    - fromEntities:
+        - world
+        - cluster
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: envoy
+  namespace: adplatform
+  labels:
+    app: envoy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: envoy
+  template:
+    metadata:
+      labels:
+        app: envoy
+    spec:
+      containers:
+        - name: envoy
+          image: envoyproxy/envoy:v1.34.1
+          args: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: envoy-config
+              mountPath: /etc/envoy
+      volumes:
+        - name: envoy-config
+          configMap:
+            name: envoy-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: envoy
+  namespace: adplatform
+spec:
+  type: LoadBalancer
+  selector:
+    app: envoy
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

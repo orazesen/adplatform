@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: scylla-headless
+  namespace: adplatform
+  labels:
+    app: scylla
+spec:
+  clusterIP: None
+  selector:
+    app: scylla
+  ports:
+    - name: cql
+      port: 9042
+    - name: gossip
+      port: 7000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scylla
+  namespace: adplatform
+  labels:
+    app: scylla
+spec:
+  selector:
+    app: scylla
+  ports:
+    - name: cql
+      port: 9042
+      targetPort: 9042
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: scylla
+  namespace: adplatform
+  labels:
+    app: scylla
+spec:
+  serviceName: scylla-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scylla
+  template:
+    metadata:
+      labels:
+        app: scylla
+    spec:
+      containers:
+        - name: scylla
+          image: scylladb/scylla:2025.3
+          ports:
+            - containerPort: 7000
+              name: gossip
+            - containerPort: 9042
+              name: cql
+          env:
+            - name: SCYLLA_CLUSTER_NAME
+              value: "adplatform-scylla"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+          volumeMounts:
+            - name: scylla-data
+              mountPath: /var/lib/scylla
+  volumeClaimTemplates:
+    - metadata:
+        name: scylla-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: docker-desktop

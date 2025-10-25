@@ -1,0 +1,36 @@
+# apiVersion: apps/v1
+# kind: DaemonSet
+# metadata:
+#   name: katran
+#   namespace: adplatform
+#   labels:
+#     app: katran
+# spec:
+#   selector:
+#     matchLabels:
+#       app: katran
+#   template:
+#     metadata:
+#       labels:
+#         app: katran
+#     spec:
+#       hostNetwork: true
+#       tolerations:
+#         - operator: Exists
+#       containers:
+#         - name: katran
+#           image: katran:latest
+#           securityContext:
+#             privileged: true
+#           volumeMounts:
+#             - name: lib-modules
+#               mountPath: /lib/modules
+#               readOnly: true
+#       volumes:
+#         - name: lib-modules
+#           hostPath:
+#             path: /lib/modules
+#             type: Directory
+# NOTE: Katran requires specific kernel support and a compatible image. This manifest is a template
+# that runs in privileged mode and uses host networking. Replace `image` with a validated Katran image
+# and ensure nodes' kernels and host config meet Katran's requirements before enabling in production.
