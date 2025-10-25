@@ -12,10 +12,16 @@ Cargo.lock
 *~
 .DS_Store
 
-# Environment
+# Environment (deprecated - using Vault now)
 .env
 .env.local
 .env.*.local
+
+# Vault credentials (NEVER commit these!)
+vault-credentials.txt
+vault-backup-*.tar.gz
+*.unseal
+*.root-token
 
 # Logs
 *.log

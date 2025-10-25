@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-management
+  namespace: adplatform
+  labels:
+    app: user-management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-management
+  template:
+    metadata:
+      labels:
+        app: user-management
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "adplatform"
+        vault.hashicorp.com/agent-inject-secret-jwt: "secret/data/adplatform/user-management"
+        vault.hashicorp.com/agent-inject-template-jwt: |
+          {{- with secret "secret/data/adplatform/user-management" -}}
+          export JWT_SECRET="{{ .Data.data.jwt_secret }}"
+          export SECRET_KEY="{{ .Data.data.secret_key }}"
+          {{- end -}}
+        # Optional: configure agent behavior
+        vault.hashicorp.com/agent-init-first: "true"
+        vault.hashicorp.com/agent-pre-populate-only: "true"
+    spec:
+      serviceAccountName: vault-auth
+      containers:
+        - name: user-management
+          image: orazesen/user-management:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          # Source the Vault-injected secrets
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              source /vault/secrets/jwt
+              exec /app/user-management
+          env:
+            - name: RUST_LOG
+              value: info
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-management
+  namespace: adplatform
+  labels:
+    app: user-management
+spec:
+  selector:
+    app: user-management
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
